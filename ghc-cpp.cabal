@@ -1,0 +1,31 @@
+cabal-version:      3.0
+name:               ghc-cpp
+version:            0.1.0.0
+-- synopsis:
+-- description:
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Alan Zimmerman
+maintainer:         alan.zimm@gmail.com
+-- copyright:
+category:           Development
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+-- extra-source-files:
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import:           warnings
+    exposed-modules:  GHC.Cpp.Parse
+    -- other-modules:
+    -- other-extensions:
+    build-depends:    base,
+                      transformers,
+                      parsec,
+                      ghc,
+                      text,
+                      bytestring
+    hs-source-dirs:   src
+    default-language: Haskell2010
