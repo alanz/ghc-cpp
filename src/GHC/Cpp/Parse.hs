@@ -18,39 +18,29 @@ import qualified Text.Parsec.Token as P
 
 -- ---------------------------------------------------------------------
 
-type CppParser = Parsec String MacroState
--- type CppParser = Parsec String ()
+-- type CppParser = Parsec String MacroState
+type CppParser = Parsec String ()
 
 parseDirective :: String -> Either Parsec.ParseError CppDirective
 parseDirective = regularParse cppDirective
 
--- regularParse :: CppParser a -> String -> Either Parsec.ParseError (MacroState, a)
--- regularParse p = PS.parse p ""
-
 regularParse :: CppParser a -> String -> Either Parsec.ParseError a
-regularParse p str = do
-    case parseMacroState initMacroState p str of
-        Left e ->Left e
-        Right (_,r) -> Right r
+-- regularParse :: CppParser a -> String -> Either Parsec.ParseError (MacroState, a)
+regularParse p = PS.parse p ""
 
-parseMacroState :: MacroState -> Parsec String MacroState a -> String -> Either ParseError (MacroState, a)
-parseMacroState s p = Parsec.runParser p' s "source"
-  where
-    p' = do
-        r <- p
-        s' <- Parsec.getState
-        return (s', r)
+-- regularParse :: CppParser a -> String -> Either Parsec.ParseError a
+-- regularParse p str = do
+--     case parseMacroState initMacroState p str of
+--         Left e ->Left e
+--         Right (_,r) -> Right r
 
-hCountParser :: Parsec.Parsec String Int ()
-hCountParser = do
-    void $ Parsec.char 'h'
-    c <- Parsec.getState
-    let c' = c + 1
-    Parsec.putState c'
-    return ()
-
-foo :: Either ParseError Int
-foo = Parsec.runParser (Parsec.many hCountParser >> Parsec.getState) 0 "" "hhhhhhhhhhhhellooo"
+-- parseMacroState :: MacroState -> Parsec String MacroState a -> String -> Either ParseError (MacroState, a)
+-- parseMacroState s p = Parsec.runParser p' s "source"
+--   where
+--     p' = do
+--         r <- p
+--         s' <- Parsec.getState
+--         return (s', r)
 
 -- TODO: delete this
 cppDefinition :: CppParser (String, [String])
@@ -130,7 +120,7 @@ cppTokens = PS.many cppToken
 -- Expression language
 -- NOTE: need to take care of macro expansion while parsing. Or perhaps before?
 
-lexer :: P.TokenParser MacroState
+lexer :: P.TokenParser ()
 lexer = P.makeTokenParser exprDef
 
 exprDef :: P.LanguageDef st
@@ -173,7 +163,7 @@ data Op
 plusTimesExpr :: CppParser Expr
 plusTimesExpr = E.buildExpressionParser eTable eTerm
 
-eTable :: [[E.Operator String MacroState Data.Functor.Identity.Identity Expr]]
+eTable :: [[E.Operator String () Data.Functor.Identity.Identity Expr]]
 eTable =
     -- Via https://learn.microsoft.com/en-us/cpp/cpp/cpp-built-in-operators-precedence-and-associativity?view=msvc-170
     [ [E.Infix (Times <$ symbol "*") E.AssocLeft]
