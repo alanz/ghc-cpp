@@ -5,6 +5,7 @@ import Data.Char
 import Control.Monad (void)
 import Data.Functor.Identity
 import Debug.Trace
+import GHC.Cpp.Types
 import GHC.Parser.Errors.Ppr ()
 import Text.Parsec
 import qualified Text.Parsec as Parsec
@@ -13,15 +14,43 @@ import Text.Parsec.Combinator as PS
 import qualified Text.Parsec.Expr as E
 import Text.Parsec.Language (emptyDef)
 import Text.Parsec.Prim as PS hiding (token)
-import Text.Parsec.String
 import qualified Text.Parsec.Token as P
 
 -- ---------------------------------------------------------------------
 
-type CppParser = Parsec String ()
+type CppParser = Parsec String MacroState
+-- type CppParser = Parsec String ()
 
-regularParse :: Parser a -> String -> Either Parsec.ParseError a
-regularParse p = PS.parse p ""
+parseDirective :: String -> Either Parsec.ParseError CppDirective
+parseDirective = regularParse cppDirective
+
+-- regularParse :: CppParser a -> String -> Either Parsec.ParseError (MacroState, a)
+-- regularParse p = PS.parse p ""
+
+regularParse :: CppParser a -> String -> Either Parsec.ParseError a
+regularParse p str = do
+    case parseMacroState initMacroState p str of
+        Left e ->Left e
+        Right (_,r) -> Right r
+
+parseMacroState :: MacroState -> Parsec String MacroState a -> String -> Either ParseError (MacroState, a)
+parseMacroState s p = Parsec.runParser p' s "source"
+  where
+    p' = do
+        r <- p
+        s' <- Parsec.getState
+        return (s', r)
+
+hCountParser :: Parsec.Parsec String Int ()
+hCountParser = do
+    void $ Parsec.char 'h'
+    c <- Parsec.getState
+    let c' = c + 1
+    Parsec.putState c'
+    return ()
+
+foo :: Either ParseError Int
+foo = Parsec.runParser (Parsec.many hCountParser >> Parsec.getState) 0 "" "hhhhhhhhhhhhellooo"
 
 -- TODO: delete this
 cppDefinition :: CppParser (String, [String])
@@ -33,14 +62,6 @@ cppDefinition = do
     definition <- cppTokens
     return (name, definition)
 
-data CppDirective
-    = CppInclude String
-    | CppDefine String [String]
-    | CppIfdef String
-    | CppIfndef String
-    | CppElse
-    | CppEndif
-    deriving (Show, Eq)
 
 cppDirective :: CppParser CppDirective
 cppDirective = do
@@ -109,7 +130,7 @@ cppTokens = PS.many cppToken
 -- Expression language
 -- NOTE: need to take care of macro expansion while parsing. Or perhaps before?
 
-lexer :: P.TokenParser ()
+lexer :: P.TokenParser MacroState
 lexer = P.makeTokenParser exprDef
 
 exprDef :: P.LanguageDef st
@@ -152,7 +173,7 @@ data Op
 plusTimesExpr :: CppParser Expr
 plusTimesExpr = E.buildExpressionParser eTable eTerm
 
-eTable :: [[E.Operator String () Data.Functor.Identity.Identity Expr]]
+eTable :: [[E.Operator String MacroState Data.Functor.Identity.Identity Expr]]
 eTable =
     -- Via https://learn.microsoft.com/en-us/cpp/cpp/cpp-built-in-operators-precedence-and-associativity?view=msvc-170
     [ [E.Infix (Times <$ symbol "*") E.AssocLeft]
@@ -179,23 +200,6 @@ pteParens = Parens <$> between (symbol "(") (symbol ")") plusTimesExpr
 
 symbol :: String -> CppParser String
 symbol s = lexeme $ string s
-
--- expr    = E.buildExpressionParser table term
---          <?> "expression"
-
--- term    =  parens expr
---          <|> natural
---          <?> "simple expression"
-
--- table   = [ [prefix "-" negate, prefix "+" id ]
---            , [postfix "++" (+1)]
---            , [binary "*" (*) AssocLeft, binary "/" (div) AssocLeft ]
---            , [binary "+" (+) AssocLeft, binary "-" (-)   AssocLeft ]
---            ]
-
--- binary  name fun assoc = Infix (do{ reservedOp name; return fun }) assoc
--- prefix  name fun       = Prefix (do{ reservedOp name; return fun })
--- postfix name fun       = Postfix (do{ reservedOp name; return fun })
 
 -- -------------------------------------
 
@@ -228,16 +232,16 @@ eVariable = do
 eToken :: String -> CppParser ()
 eToken = P.reserved lexer
 
-eInteger :: Parser Expr
+eInteger :: CppParser Expr
 eInteger = IntVal <$> integer
 
-integer :: Parser Int
+integer :: CppParser Int
 integer = read <$> lexeme (many1 digit)
 
 -- ---------------------------------------------------------------------
 
 doTest :: String -> Either Parsec.ParseError CppDirective
-doTest = regularParse cppDirective
+doTest str = regularParse cppDirective str
 
 t0 :: Either Parsec.ParseError CppDirective
 t0 = doTest "#define FOO(m1,m2,m) ((m1) <  1 || (m1) == 1 && (m2) <  7 || (m1) == 1 && (m2) == 7 && (m) <= 0)"
