@@ -27,6 +27,8 @@ details
 import qualified Data.Map as Map
 import GHC.Cpp.Parse
 import GHC.Cpp.Types
+import GHC.Cpp.Lexer
+import GHC.Cpp.ParserM
 
 -- ---------------------------------------------------------------------
 
@@ -57,6 +59,27 @@ ifdef s name =
 
 -- ---------------------------------------------------------------------
 
+cppLex :: String -> Either String [Token]
+cppLex s = case lexCppTokenStream s init_state of
+    Left err -> Left err
+    Right (_inp, _st, toks) -> Right toks
+
+-- ---------------------------------------------------------------------
+
+expand :: MacroState -> String -> String
+expand s str = str
+
+-- ---------------------------------------------------------------------
+
 m0 = do
     let (s, _) = process initMacroState "#define FOO 3"
     process s "#ifdef FOO"
+
+-- ---------------------------------------------------------------------
+
+m1 :: Either String [Token]
+m1 = cppLex "`"
+
+m2 :: Either String [Token]
+m2 = cppLex "hello(5)"
+

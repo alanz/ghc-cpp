@@ -16,6 +16,30 @@ import Text.Parsec.Language (emptyDef)
 import Text.Parsec.Prim as PS hiding (token)
 import qualified Text.Parsec.Token as P
 
+-- =====================================================================
+-- First parse to CPP tokens, using a C++-like language spec
+-- https://gcc.gnu.org/onlinedocs/cpp/Tokenization.html
+
+lexer :: P.TokenParser ()
+lexer = P.makeTokenParser exprDef
+
+exprDef :: P.LanguageDef st
+exprDef =
+    emptyDef
+        { P.commentStart = "/*"
+        , P.commentEnd = "*/"
+        , P.commentLine = "//"
+        , P.nestedComments = False
+        , P.identStart = letter <|> char '_'
+        , P.identLetter = alphaNum <|> oneOf "_'"
+        , P.opStart = P.opLetter exprDef
+        , P.opLetter = oneOf ":!#$%&*+./<=>?@\\^|-~"
+        , P.reservedOpNames = []
+        , P.reservedNames = []
+        , P.caseSensitive = True
+        }
+
+-- =====================================================================
 -- ---------------------------------------------------------------------
 
 -- type CppParser = Parsec String MacroState
@@ -120,24 +144,6 @@ cppTokens = PS.many cppToken
 -- Expression language
 -- NOTE: need to take care of macro expansion while parsing. Or perhaps before?
 
-lexer :: P.TokenParser ()
-lexer = P.makeTokenParser exprDef
-
-exprDef :: P.LanguageDef st
-exprDef =
-    emptyDef
-        { P.commentStart = "/*"
-        , P.commentEnd = "*/"
-        , P.commentLine = "//"
-        , P.nestedComments = False
-        , P.identStart = letter <|> char '_'
-        , P.identLetter = alphaNum <|> oneOf "_'"
-        , P.opStart = P.opLetter exprDef
-        , P.opLetter = oneOf ":!#$%&*+./<=>?@\\^|-~"
-        , P.reservedOpNames = []
-        , P.reservedNames = []
-        , P.caseSensitive = True
-        }
 
 data Expr
     = Parens Expr
@@ -254,3 +260,4 @@ t2 = regularParse plusTimesExpr "((m1) <  1 || (m1) == 1 && (m2) <  7 || (m1) ==
 --                       (BinOp CmpEqual (Parens (Var "m1")) (IntVal 1))
 --                       (BinOp CmpEqual (Parens (Var "m2")) (IntVal 7)))
 --                (BinOp CmpLtE (Parens (Var "m")) (IntVal 0)))))
+
