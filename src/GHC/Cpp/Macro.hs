@@ -25,10 +25,11 @@ details
 -- TODO: Parse tokens with original locations in them.
 
 import qualified Data.Map as Map
-import GHC.Cpp.Parse
-import GHC.Cpp.Types
+import Data.Maybe
 import GHC.Cpp.Lexer
+import GHC.Cpp.Parse
 import GHC.Cpp.ParserM
+import GHC.Cpp.Types
 
 -- ---------------------------------------------------------------------
 
@@ -42,6 +43,7 @@ process s str = (s0, o)
         CppDefine name toks -> define s name toks
         CppInclude _ -> undefined
         CppIfdef name -> ifdef s name
+        CppIf toks -> cppIf s toks
         CppIfndef _ -> undefined
         CppElse -> undefined
         CppEndif -> undefined
@@ -57,6 +59,13 @@ ifdef s name =
         Just _ -> s{pp_accepting = True}
         _ -> s
 
+cppIf :: MacroState -> [String] -> MacroState
+cppIf s toks = r
+  where
+    expanded = expand s (unwords toks)
+    toks0 = cppLex expanded
+    r = error (show toks0)
+
 -- ---------------------------------------------------------------------
 
 cppLex :: String -> Either String [Token]
@@ -67,13 +76,31 @@ cppLex s = case lexCppTokenStream s init_state of
 -- ---------------------------------------------------------------------
 
 expand :: MacroState -> String -> String
-expand s str = str
+expand s str = expanded
+  where
+    -- TODO: repeat until re-expand or fixpoint
+    toks = case cppLex str of
+        Left err -> error err
+        Right tks -> tks
+    expanded = unwords $ concatMap (expandOne s) toks
+
+expandOne :: MacroState -> Token -> [String]
+expandOne s tok = r
+  where
+    -- TODO: protect against looking up `define`
+    r =
+        fromMaybe
+            [t_str tok]
+            (Map.lookup (MacroName (t_str tok) Nothing) (pp_defines s))
 
 -- ---------------------------------------------------------------------
 
+m0 :: (MacroState, Output)
 m0 = do
-    let (s, _) = process initMacroState "#define FOO 3"
-    process s "#ifdef FOO"
+    let (s0, _) = process initMacroState "#define FOO 3"
+    let (s1,_) = process s0 "#ifdef FOO"
+    process s1 "# if FOO == 4"
+
 
 -- ---------------------------------------------------------------------
 
@@ -82,4 +109,3 @@ m1 = cppLex "`"
 
 m2 :: Either String [Token]
 m2 = cppLex "hello(5)"
-

@@ -85,10 +85,10 @@ cppDirective = do
         [ cppKw "define" >> cmdDefinition
         , try $ cppKw "include" >> cmdInclude
         , try $ cppKw "ifdef" >> cmdIfdef
-        , cppKw "ifndef" >> cmdIfndef
+        , try $ cppKw "ifndef" >> cmdIfndef
+        , try $ cppKw "if" >> cmdIf
         , try $ cppKw "else" >> return CppElse
         , cppKw "endif" >> return CppEndif
-        -- , cppKw "if" CppIfKw
         -- , cppKw "elif" CppElifKw
         -- , cppKw "undef" CppUndefKw
         -- , cppKw "error" CppErrorKw
@@ -111,6 +111,9 @@ cmdIfdef = CppIfdef <$> cppToken
 
 cmdIfndef :: CppParser CppDirective
 cmdIfndef = CppIfndef <$> cppToken
+
+cmdIf :: CppParser CppDirective
+cmdIf = CppIf <$> cppTokens
 
 cppKw :: String -> CppParser ()
 cppKw kw = void $ lexeme (PS.string kw)
@@ -261,3 +264,6 @@ t2 = regularParse plusTimesExpr "((m1) <  1 || (m1) == 1 && (m2) <  7 || (m1) ==
 --                       (BinOp CmpEqual (Parens (Var "m2")) (IntVal 7)))
 --                (BinOp CmpLtE (Parens (Var "m")) (IntVal 0)))))
 
+
+t3 :: Either ParseError CppDirective
+t3 = regularParse cppDirective "# if FOO == 4"

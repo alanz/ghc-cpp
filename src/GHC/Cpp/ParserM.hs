@@ -10,9 +10,7 @@ module GHC.Cpp.ParserM (
     init_state,
     StartCode,
     start_code,
-    set_start_code,
-    inc_brace_depth,
-    dec_brace_depth,
+    setStartCode,
     -- Tokens
     Token (..),
     -- Actions
@@ -89,104 +87,94 @@ init_state =
 -- Tokens
 
 data Token
-    = TEOF
-    | TOpenBrace
-    | TCloseBrace
-    | TOpenBracket
-    | TCloseBracket
-    | THash
-    | THashHash
-    | TOpenParen
-    | TCloseParen
-    | TLtColon
-    | TColonGt
-    | TLtPercent
-    | TPercentGt
-    | TPercentColon
-    | TPercentColonTwice
-    | TSemi
-    | TColon
-    | TDotDotDot
-    | TNew
-    | TDelete
-    | TQuestion
-    | TColonColon
-    | TDot
-    | TDotStar
-    | TPlus
-    | TMinus
-    | TStar
-    | TSlash
-    | TPercent
-    | TUpArrow
-    | TAmpersand
-    | TPipe
-    | TTilde
-    | TExclamation
-    | TEqual
-    | TOpenAngle
-    | TCloseAngle
-    | TPlusEqual
-    | TMinusEqual
-    | TStarEqual
-    | TSlashEqual
-    | TPercentEqual
-    | TUpEqual
-    | TAmpersandEqual
-    | TPipeEqual
-    | TLtLt
-    | TGtGt
-    | TGtGtEqual
-    | TLtLtEqual
-    | TEqualEqual
-    | TExclaimEqual
-    | TLtEqual
-    | TGtEqual
-    | TAmpersandTwice
-    | TPipePipe
-    | TPlusPlus
-    | TMinusMinus
-    | TComma
-    | TMinusGtStar
-    | TMinusGt
-    | TAnd
-    | TAndEq
-    | TBitand
-    | TBitor
-    | TCompl
-    | TNot
-    | TNotEq
-    | TOr
-    | TOrEq
-    | TXor
-    | TXorEq
-    | TLowerName String
-    | TUpperName String
-    | TString String
-    | TInteger Int
-    | TOther String
+    = TEOF {t_str :: String}
+    | TOpenBrace {t_str :: String}
+    | TCloseBrace {t_str :: String}
+    | TOpenBracket {t_str :: String}
+    | TCloseBracket {t_str :: String}
+    | THash {t_str :: String}
+    | THashHash {t_str :: String}
+    | TOpenParen {t_str :: String}
+    | TCloseParen {t_str :: String}
+    | TLtColon {t_str :: String}
+    | TColonGt {t_str :: String}
+    | TLtPercent {t_str :: String}
+    | TPercentGt {t_str :: String}
+    | TPercentColon {t_str :: String}
+    | TPercentColonTwice {t_str :: String}
+    | TSemi {t_str :: String}
+    | TColon {t_str :: String}
+    | TDotDotDot {t_str :: String}
+    | TNew {t_str :: String}
+    | TDelete {t_str :: String}
+    | TQuestion {t_str :: String}
+    | TColonColon {t_str :: String}
+    | TDot {t_str :: String}
+    | TDotStar {t_str :: String}
+    | TPlus {t_str :: String}
+    | TMinus {t_str :: String}
+    | TStar {t_str :: String}
+    | TSlash {t_str :: String}
+    | TPercent {t_str :: String}
+    | TUpArrow {t_str :: String}
+    | TAmpersand {t_str :: String}
+    | TPipe {t_str :: String}
+    | TTilde {t_str :: String}
+    | TExclamation {t_str :: String}
+    | TEqual {t_str :: String}
+    | TOpenAngle {t_str :: String}
+    | TCloseAngle {t_str :: String}
+    | TPlusEqual {t_str :: String}
+    | TMinusEqual {t_str :: String}
+    | TStarEqual {t_str :: String}
+    | TSlashEqual {t_str :: String}
+    | TPercentEqual {t_str :: String}
+    | TUpEqual {t_str :: String}
+    | TAmpersandEqual {t_str :: String}
+    | TPipeEqual {t_str :: String}
+    | TLtLt {t_str :: String}
+    | TGtGt {t_str :: String}
+    | TGtGtEqual {t_str :: String}
+    | TLtLtEqual {t_str :: String}
+    | TEqualEqual {t_str :: String}
+    | TExclaimEqual {t_str :: String}
+    | TLtEqual {t_str :: String}
+    | TGtEqual {t_str :: String}
+    | TAmpersandTwice {t_str :: String}
+    | TPipePipe {t_str :: String}
+    | TPlusPlus {t_str :: String}
+    | TMinusMinus {t_str :: String}
+    | TComma {t_str :: String}
+    | TMinusGtStar {t_str :: String}
+    | TMinusGt {t_str :: String}
+    | TAnd {t_str :: String}
+    | TAndEq {t_str :: String}
+    | TBitand {t_str :: String}
+    | TBitor {t_str :: String}
+    | TCompl {t_str :: String}
+    | TNot {t_str :: String}
+    | TNotEq {t_str :: String}
+    | TOr {t_str :: String}
+    | TOrEq {t_str :: String}
+    | TXor {t_str :: String}
+    | TXorEq {t_str :: String}
+    | TLowerName {t_str :: String}
+    | TUpperName {t_str :: String}
+    | TString {t_str :: String}
+    | TInteger {t_str :: String}
+    | TOther {t_str :: String}
     deriving (Show)
 
 -- Actions
 
 type Action = String -> ParserM Token
 
-set_start_code :: StartCode -> ParserM ()
-set_start_code sc = ParserM $ \i st -> Right (i, st{start_code = sc}, ())
-
-inc_brace_depth :: ParserM ()
-inc_brace_depth = ParserM $ \i st ->
-    Right (i, st{brace_depth = brace_depth st + 1}, ())
-
-dec_brace_depth :: ParserM ()
-dec_brace_depth = ParserM $ \i st ->
-    let bd = brace_depth st - 1
-        sc = if bd == 0 then 0 else 1
-     in Right (i, st{brace_depth = bd, start_code = sc}, ())
+setStartCode :: StartCode -> ParserM ()
+setStartCode sc = ParserM $ \i st -> Right (i, st{start_code = sc}, ())
 
 andBegin :: Action -> StartCode -> Action
 (act `andBegin` sc) x = do
-    set_start_code sc
+    setStartCode sc
     act x
 
 mkT :: Token -> Action
@@ -197,9 +185,8 @@ mkTv f str = ParserM (\i st -> Right (i, st, f str))
 
 -- begin :: Int -> Action
 -- begin sc _span _buf _len _buf2 =
---   do set_start_code sc
+--   do setStartCode sc
 --      lex_tok
-
 
 -- Positions
 

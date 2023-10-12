@@ -10,6 +10,7 @@ data CppDirective
     | CppDefine String [String]
     | CppIfdef String
     | CppIfndef String
+    | CppIf [String]
     | CppElse
     | CppEndif
     deriving (Show, Eq)
