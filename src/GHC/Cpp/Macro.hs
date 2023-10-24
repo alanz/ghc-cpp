@@ -1,5 +1,3 @@
-{-# LANGUAGE EmptyCase #-}
-
 module GHC.Cpp.Macro where
 
 -- From https://gcc.gnu.org/onlinedocs/cpp/Macros.html
@@ -26,6 +24,7 @@ details
 
 import qualified Data.Map as Map
 import Data.Maybe
+import GHC.Cpp.Eval
 import GHC.Cpp.Lexer
 import GHC.Cpp.Parse
 import GHC.Cpp.ParserM
@@ -63,8 +62,13 @@ cppIf :: MacroState -> [String] -> MacroState
 cppIf s toks = r
   where
     expanded = expand s (unwords toks)
-    toks0 = cppLex expanded
-    r = error (show toks0)
+    -- toks0 = cppLex expanded
+    -- r = error (show toks0)
+    v = case regularParse plusTimesExpr expanded of
+        Left err -> error $ show err
+        Right tree -> eval tree
+    --    We evaluate to an Int, which we convert to a bool
+    r = s{pp_accepting = toBool v}
 
 -- ---------------------------------------------------------------------
 
@@ -98,9 +102,8 @@ expandOne s tok = r
 m0 :: (MacroState, Output)
 m0 = do
     let (s0, _) = process initMacroState "#define FOO 3"
-    let (s1,_) = process s0 "#ifdef FOO"
+    let (s1, _) = process s0 "#ifdef FOO"
     process s1 "# if FOO == 4"
-
 
 -- ---------------------------------------------------------------------
 

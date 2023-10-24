@@ -17,12 +17,18 @@ Flag build-tool-depends
     Description: Use build-tool-depends
     Default: True
 
+Flag dev {
+  Description: Development mode, do not use lib in the tests
+  Default:     False
+}
+
 common warnings
     ghc-options: -Wall
 
 library
     import:           warnings
-    exposed-modules:  GHC.Cpp.Lexer
+    exposed-modules:  GHC.Cpp.Eval
+                    , GHC.Cpp.Lexer
                     , GHC.Cpp.Macro
                     , GHC.Cpp.Parse
                     , GHC.Cpp.ParserM
@@ -41,3 +47,33 @@ library
     default-language: Haskell2010
     if flag(build-tool-depends)
       build-tool-depends: alex:alex >= 3.2.6, happy:happy >= 1.20.0
+
+test-suite test
+  type:                exitcode-stdio-1.0
+  if flag (dev)
+    hs-source-dirs:      tests
+                         src
+  else
+    hs-source-dirs:      tests
+
+  main-is:             Test.hs
+  other-modules:       GHC.Cpp.Lexer
+  -- other-modules:       Test.Common
+  --                    , Test.CommonUtils
+  --                    , Test.NoAnnotations
+  --                    , Test.Transform
+  GHC-Options:         -threaded -Wall -Wredundant-constraints
+  Default-language:    Haskell2010
+  Build-depends:       HUnit >= 1.2
+                     , base < 4.20
+  if flag(dev)
+     build-depends:
+                      array,
+                      transformers,
+                      parsec,
+                      ghc,
+                      text,
+                      bytestring,
+                      containers
+   if flag(build-tool-depends)
+     build-tool-depends: alex:alex >= 3.2.6, happy:happy >= 1.20.0
