@@ -27,7 +27,8 @@ common warnings
 
 library
     import:           warnings
-    exposed-modules:  GHC.Cpp.Eval
+    exposed-modules:  GHC.Cpp
+                    , GHC.Cpp.Eval
                     , GHC.Cpp.Lexer
                     , GHC.Cpp.Macro
                     , GHC.Cpp.Parse

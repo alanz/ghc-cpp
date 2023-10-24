@@ -1,11 +1,6 @@
 module GHC.Cpp.Eval where
 
-import qualified Data.Map as Map
-import Data.Maybe
-import GHC.Cpp.Lexer
 import GHC.Cpp.Parse
-import GHC.Cpp.ParserM
-import GHC.Cpp.Types
 
 -- ---------------------------------------------------------------------
 

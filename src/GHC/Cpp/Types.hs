@@ -26,7 +26,7 @@ data MacroState = MacroState
     { pp_defines :: !(Map MacroName MacroDef)
     , pp_accepting :: !Bool
     }
-    deriving (Show)
+    deriving (Show, Eq)
 
 initMacroState :: MacroState
 initMacroState = MacroState{pp_defines = Map.empty, pp_accepting = True}
