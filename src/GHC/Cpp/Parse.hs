@@ -42,24 +42,24 @@ exprDef =
 -- =====================================================================
 -- ---------------------------------------------------------------------
 
--- type CppParser = Parsec String MacroState
+-- type CppParser = Parsec String PpState
 type CppParser = Parsec String ()
 
 parseDirective :: String -> Either Parsec.ParseError CppDirective
 parseDirective = regularParse cppDirective
 
 regularParse :: CppParser a -> String -> Either Parsec.ParseError a
--- regularParse :: CppParser a -> String -> Either Parsec.ParseError (MacroState, a)
+-- regularParse :: CppParser a -> String -> Either Parsec.ParseError (PpState, a)
 regularParse p = PS.parse p ""
 
 -- regularParse :: CppParser a -> String -> Either Parsec.ParseError a
 -- regularParse p str = do
---     case parseMacroState initMacroState p str of
+--     case parsePpState initPpState p str of
 --         Left e ->Left e
 --         Right (_,r) -> Right r
 
--- parseMacroState :: MacroState -> Parsec String MacroState a -> String -> Either ParseError (MacroState, a)
--- parseMacroState s p = Parsec.runParser p' s "source"
+-- parsePpState :: PpState -> Parsec String PpState a -> String -> Either ParseError (PpState, a)
+-- parsePpState s p = Parsec.runParser p' s "source"
 --   where
 --     p' = do
 --         r <- p
@@ -239,11 +239,11 @@ integer = read <$> lexeme (many1 digit)
 
 -- ---------------------------------------------------------------------
 
-doTest :: String -> Either Parsec.ParseError CppDirective
-doTest str = regularParse cppDirective str
+doATest :: String -> Either Parsec.ParseError CppDirective
+doATest str = regularParse cppDirective str
 
 t0 :: Either Parsec.ParseError CppDirective
-t0 = doTest "#define FOO(m1,m2,m) ((m1) <  1 || (m1) == 1 && (m2) <  7 || (m1) == 1 && (m2) == 7 && (m) <= 0)"
+t0 = doATest "#define FOO(m1,m2,m) ((m1) <  1 || (m1) == 1 && (m2) <  7 || (m1) == 1 && (m2) == 7 && (m) <= 0)"
 
 t1 :: Either Parsec.ParseError Expr
 t1 = regularParse plusTimesExpr "(m < 1)"

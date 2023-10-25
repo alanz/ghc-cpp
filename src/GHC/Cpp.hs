@@ -1,11 +1,11 @@
 module GHC.Cpp (
     process,
-    MacroState (..),
+    PpState (..),
     MacroName(..),
-    initMacroState,
+    initPpState,
     Input,
     Output,
 ) where
 
 import GHC.Cpp.Macro
-import GHC.Cpp.Types (Input, MacroState (..), Output, initMacroState, MacroName(..))
+import GHC.Cpp.Types (Input, PpState (..), Output, initPpState, MacroName(..))

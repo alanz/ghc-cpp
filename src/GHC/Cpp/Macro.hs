@@ -32,7 +32,7 @@ import GHC.Cpp.Types
 
 -- ---------------------------------------------------------------------
 
-process :: MacroState -> Input -> (MacroState, Output)
+process :: PpState -> Input -> (PpState, Output)
 process s str = (s0, o)
   where
     o = case regularParse cppDirective str of
@@ -43,22 +43,28 @@ process s str = (s0, o)
         CppInclude _ -> undefined
         CppIfdef name -> ifdef s name
         CppIf toks -> cppIf s toks
-        CppIfndef _ -> undefined
+        CppIfndef name -> ifndef s name
         CppElse -> undefined
         CppEndif -> undefined
 
 -- ---------------------------------------------------------------------
 
-define :: MacroState -> String -> MacroDef -> MacroState
+define :: PpState -> String -> MacroDef -> PpState
 define s name toks = s{pp_defines = Map.insert (MacroName name Nothing) toks (pp_defines s)}
 
-ifdef :: MacroState -> String -> MacroState
+ifdef :: PpState -> String -> PpState
 ifdef s name =
     case Map.lookup (MacroName name Nothing) (pp_defines s) of
         Just _ -> s{pp_accepting = True}
-        _ -> s
+        _ -> s{pp_accepting = False}
 
-cppIf :: MacroState -> [String] -> MacroState
+ifndef :: PpState -> String -> PpState
+ifndef s name =
+    case Map.lookup (MacroName name Nothing) (pp_defines s) of
+        Just _ -> s{pp_accepting = False}
+        _ -> s{pp_accepting = True}
+
+cppIf :: PpState -> [String] -> PpState
 cppIf s toks = r
   where
     expanded = expand s (unwords toks)
@@ -79,7 +85,7 @@ cppLex s = case lexCppTokenStream s init_state of
 
 -- ---------------------------------------------------------------------
 
-expand :: MacroState -> String -> String
+expand :: PpState -> String -> String
 expand s str = expanded
   where
     -- TODO: repeat until re-expand or fixpoint
@@ -88,7 +94,7 @@ expand s str = expanded
         Right tks -> tks
     expanded = unwords $ concatMap (expandOne s) toks
 
-expandOne :: MacroState -> Token -> [String]
+expandOne :: PpState -> Token -> [String]
 expandOne s tok = r
   where
     -- TODO: protect against looking up `define`
@@ -99,9 +105,9 @@ expandOne s tok = r
 
 -- ---------------------------------------------------------------------
 
-m0 :: (MacroState, Output)
+m0 :: (PpState, Output)
 m0 = do
-    let (s0, _) = process initMacroState "#define FOO 3"
+    let (s0, _) = process initPpState "#define FOO 3"
     let (s1, _) = process s0 "#ifdef FOO"
     process s1 "# if FOO == 4"
 

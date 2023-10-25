@@ -22,14 +22,14 @@ data MacroName = MacroName String (Maybe MacroArgs)
     deriving (Show, Eq, Ord)
 type MacroDef = [String]
 
-data MacroState = MacroState
+data PpState = PpState
     { pp_defines :: !(Map MacroName MacroDef)
     , pp_accepting :: !Bool
     }
     deriving (Show, Eq)
 
-initMacroState :: MacroState
-initMacroState = MacroState{pp_defines = Map.empty, pp_accepting = True}
+initPpState :: PpState
+initPpState = PpState{pp_defines = Map.empty, pp_accepting = True}
 
 type Input = String
 type Output = CppDirective

@@ -37,9 +37,9 @@ partA _n = return (5, 3)
 partB :: Integer -> IO Bool
 partB _n = return True
 
-m0 :: (MacroState, Output)
+m0 :: (PpState, Output)
 m0 = do
-    let (s0, _) = process initMacroState "#define FOO 3"
+    let (s0, _) = process initPpState "#define FOO 3"
     let (s1, _) = process s0 "#ifdef FOO"
     process s1 "# if FOO == 4"
 
@@ -47,10 +47,10 @@ m1 :: Test
 m1 =
     TestCase
         ( do
-            let (s0, _) = process initMacroState "#define FOO 3"
+            let (s0, _) = process initPpState "#define FOO 3"
             assertEqual
                 "s0"
-                ( MacroState
+                ( PpState
                     { pp_defines = Map.fromList [(MacroName "FOO" Nothing, ["3"])]
                     , pp_accepting = True
                     }
@@ -59,7 +59,7 @@ m1 =
             let (s1, _) = process s0 "#ifdef FOO"
             assertEqual
                 "s1"
-                MacroState
+                PpState
                     { pp_defines = Map.fromList [(MacroName "FOO" Nothing, ["3"])]
                     , pp_accepting = True
                     }
@@ -67,7 +67,7 @@ m1 =
             let (s2, _) = process s1 "# if FOO == 4"
             assertEqual
                 "s2"
-                MacroState
+                PpState
                     { pp_defines = Map.fromList [(MacroName "FOO" Nothing, ["3"])]
                     , pp_accepting = False
                     }
@@ -75,7 +75,7 @@ m1 =
             let (s3, _) = process s2 "#ifndef FOO"
             assertEqual
                 "s3"
-                MacroState
+                PpState
                     { pp_defines = Map.fromList [(MacroName "FOO" Nothing, ["3"])]
                     , pp_accepting = False
                     }
